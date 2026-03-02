@@ -57,8 +57,15 @@ function getCookie(name: string): string | null {
 function getOrCreateVisitorId(): string {
   let vid = getCookie('visitor')
   if (!vid) {
-    // Simple random ID (not a fingerprint — privacy-safe)
-    vid = Math.random().toString(36).slice(2) + Date.now().toString(36)
+    // Cryptographically random ID — privacy-safe, no PII
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      vid = crypto.randomUUID().replace(/-/g, '')
+    } else {
+      // Fallback for older browsers
+      const arr = new Uint8Array(16)
+      crypto.getRandomValues(arr)
+      vid = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
+    }
     setCookie('visitor', vid, 365)
   }
   return vid
@@ -78,7 +85,10 @@ function shouldIncludeVisitor(trafficAllocation: number, visitorId: string): boo
 
 // ─── Variant assignment ───────────────────────────────────────────────────────
 
-function assignVariant(experiment: Experiment, visitorId: string): Variant {
+function assignVariant(experiment: Experiment, visitorId: string): Variant | null {
+  // BUG-001: Guard against experiments with no variants (should never happen, but be defensive)
+  if (!experiment.variants || experiment.variants.length === 0) return null
+
   const existing = getCookie(`exp_${experiment.id}`)
   const targetVariant = experiment.variants.find((v) => v.id === existing)
   if (targetVariant) return targetVariant
@@ -94,6 +104,9 @@ function assignVariant(experiment: Experiment, visitorId: string): Variant {
 
   const assigned = experiment.variants.find((v) => v.isControl === !isVariant)
     ?? experiment.variants[0]
+
+  // BUG-001: assigned could still be undefined if neither find nor [0] returns a variant
+  if (!assigned) return null
 
   setCookie(`exp_${experiment.id}`, assigned.id, COOKIE_DAYS)
   return assigned
@@ -139,8 +152,12 @@ async function trackImpression(
   try {
     await fetch(`${API_BASE}/api/widget/track`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ experimentId, variantId, visitorHash, event: 'impression', apiKey }),
+      headers: {
+        'Content-Type': 'application/json',
+        // SEC-002: Send API key in Authorization header, not request body
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ experimentId, variantId, visitorHash, event: 'impression' }),
       keepalive: true,
     })
   } catch {
@@ -159,8 +176,12 @@ async function trackConversion(
   try {
     await fetch(`${API_BASE}/api/widget/track`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ experimentId, variantId, visitorHash, event: 'conversion', apiKey }),
+      headers: {
+        'Content-Type': 'application/json',
+        // SEC-002: Send API key in Authorization header, not request body
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ experimentId, variantId, visitorHash, event: 'conversion' }),
       keepalive: true,
     })
     // Mark converted in cookie so we don't double-count
@@ -273,7 +294,10 @@ async function init(): Promise<void> {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/widget/experiments?apiKey=${encodeURIComponent(apiKey)}`)
+    // SEC-002: Use Authorization header — API key must not appear in URLs (logs, CDN, referrer)
+    const res = await fetch(`${API_BASE}/api/widget/experiments`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    })
     if (!res.ok) return
 
     const { experiments: exps }: { experiments: Experiment[] } = await res.json() as { experiments: Experiment[] }
@@ -282,6 +306,9 @@ async function init(): Promise<void> {
       if (!shouldIncludeVisitor(experiment.trafficAllocation, visitorId)) continue
 
       const variant = assignVariant(experiment, visitorId)
+      // BUG-001: skip if no variant could be assigned (empty variants list)
+      if (!variant) continue
+
       assignments.push({ experimentId: experiment.id, variantId: variant.id })
 
       applyVariant(variant)

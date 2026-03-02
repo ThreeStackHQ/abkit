@@ -1,0 +1,26 @@
+{
+  "name": "@abkit/worker",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AbKit background worker — experiment analytics & email digests",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@abkit/db": "workspace:*",
+    "bullmq": "^5.38.0",
+    "ioredis": "^5.4.2",
+    "resend": "^4.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.2"
+  }
+}

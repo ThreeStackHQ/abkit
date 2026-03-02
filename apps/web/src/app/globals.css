@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #7c3aed;       /* purple-700 — AbKit brand */
+  --primary-hover: #6d28d9;
+  --background: #0f0f0f;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-border: #27272a;
+  --muted: #71717a;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

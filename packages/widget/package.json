@@ -1,0 +1,14 @@
+{
+  "name": "@abkit/widget",
+  "version": "0.0.1",
+  "description": "AbKit Vanilla JS widget — A/B test anything in 5 minutes",
+  "main": "./dist/widget.js",
+  "scripts": {
+    "build": "tsc && node scripts/bundle.js",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "esbuild": "^0.24.2"
+  }
+}

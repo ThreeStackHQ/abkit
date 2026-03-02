@@ -1,37 +1,28 @@
 # Dependencies
-node_modules/
-.pnp
-.pnp.js
+node_modules
+.pnpm-store
 
 # Build outputs
-dist/
-.next/
-out/
-build/
+.next
+dist
+*.tsbuildinfo
 
-# Env files
+# Environment
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea
+.vscode
+*.swp
 
 # Turbo
-.turbo/
+.turbo
 
-# Misc
-.DS_Store
-*.pem
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Vercel
 .vercel
-.idea/
-.vscode/
-
-# Drizzle
-drizzle/
-
-# TypeScript
-*.tsbuildinfo

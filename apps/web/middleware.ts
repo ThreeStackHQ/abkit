@@ -11,7 +11,7 @@ export default auth((req) => {
   }
 
   // Redirect authed users away from auth pages
-  if ((pathname === '/login' || pathname === '/signup') && isAuthed) {
+  if (pathname === '/login' && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
@@ -19,5 +19,12 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/signup'],
+  // Exclude /api/widget/* and /api/stripe/webhook from auth
+  matcher: [
+    '/dashboard/:path*',
+    '/login',
+    '/api/experiments/:path*',
+    '/api/stripe/checkout',
+    '/api/cron/:path*',
+  ],
 }
